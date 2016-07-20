@@ -1,0 +1,10 @@
+SublimeLinter-contrib-luarequire
+-------------------------------
+This linter plugin for SublimeLinter provides an interface to luarequire.
+
+** IMPORTANT! **
+
+Before this plugin will activate, you *must*
+follow the installation instructions here:
+
+https://github.com/henri/SublimeLinter-contrib-luarequire
