@@ -16,7 +16,20 @@ from SublimeLinter.lint import Linter, highlight
 
 require_re = re.compile(r"local (\w+)\s*=\s*require\s*\(([^\)]+)\)")
 name_re = re.compile(r"(?:.*_)?([^_]+)")
-module_re = re.compile(r'"(\w+?)"')
+
+# "          : match a "
+# [^"]*?     : eat leading .s in the module name
+# ([^\"\.]+) : get the module name, that contains no dots and "
+# "          : end with a "
+module_re = re.compile(r'"[^"]*?([^"\.]+)"')
+
+
+def find_last_match(pattern, string):
+    module_match = module_re.search(string)
+    while module_match is not None:
+        previous_match = module_match
+        module_match = module_re.search(string, previous_match.end())
+    return previous_match
 
 
 class Luarequire(Linter):
@@ -26,6 +39,7 @@ class Luarequire(Linter):
     cmd = None
     regex = re.compile(r'^(?P<line>\d+):(?P<col>\d+):(?P<message>.*)$')
     default_type = highlight.WARNING
+    line_col_base = (0, 0)
 
     def run(self, cmd, code):
 
@@ -35,14 +49,15 @@ class Luarequire(Linter):
             match = require_re.match(line)
             if match:
                 name_match = name_re.match(match.group(1))
-                modules_results = module_re.findall(match.group(2))
-                if name_match and modules_results:
+                module_match = find_last_match(module_re, match.group(2))
+
+                if name_match and module_match:
                     name = name_match.group(1)
-                    module = modules_results[-1]
+                    module = module_match.group(1)
                     if name != module:
                         errors.append("{line}:{col}:{module_name} doesn't match end of variable {variable}".format(
-                            line=lineNumber + 1,
-                            col=line.find('"{}"'.format(module)) + 2,
+                            line=lineNumber,
+                            col=match.start(2) + module_match.start(1),
                             module_name=module,
                             variable=match.group(1)
                         ))
